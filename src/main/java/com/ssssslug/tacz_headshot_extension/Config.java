@@ -7,6 +7,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import org.apache.commons.compress.utils.Lists;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class Config {
     static final ForgeConfigSpec.ConfigValue<List<? extends String>> BULLET_ENTITY_TYPE_LIST_POTION;
     static final ForgeConfigSpec.ConfigValue<List<? extends String>> BULLET_ENTITY_TYPE_LIST_BLACKLIST;
     public static final ForgeConfigSpec.DoubleValue GENERIC_HEADSHOT_MULTIPLIER;
+    public static final ForgeConfigSpec.BooleanValue USE_TACZ_HEADSHOT_SOUND;
     public static final ForgeConfigSpec.ConfigValue<String> TEMPLATE_TACZ_WEAPON;
     public static final ForgeConfigSpec.BooleanValue DISABLE_GLOBAL_HEADSHOT_BOX;
 
@@ -40,7 +42,7 @@ public class Config {
                 .comment("e.g. \"minecraft:arrow=2.0\"").worldRestart()
                 .define("Bullet Type List", Lists.newArrayList());
 
-        BULLET_ENTITY_TYPE_LIST_POTION = BUILDER.comment("In particular, if the projectile is a vanilla tipped-arrow and has a valid Potion type-")
+        BULLET_ENTITY_TYPE_LIST_POTION = BUILDER.comment("").comment("In particular, if the projectile is a vanilla tipped-arrow and has a valid Potion type-")
                 .comment("-(Attention: Only potion type is usable, Custom Effects NBT will be ignored), you can write them here to get a special multiplier.")
                 .comment("Make yourself aware of the difference between Potion and Effect.")
                 .comment("e.g. \"minecraft:harming=2.5\", \"minecraft:strong_harming=3.0\"")
@@ -48,22 +50,24 @@ public class Config {
                 .worldRestart()
                 .define("Tipped Arrow Potion List", Lists.newArrayList());
 
-        BULLET_ENTITY_TYPE_LIST_BLACKLIST = BUILDER.comment("Some projectiles might not be suitable for performing a \"Headshot\".That's why there's a blacklist.")
+        BULLET_ENTITY_TYPE_LIST_BLACKLIST = BUILDER.comment("").comment("Some projectiles might not be suitable for performing a \"Headshot\".That's why there's a blacklist.")
                 .comment("There's also a blacklist of damage-types, or in other words, a tag as \"" + TACZHeadshotExtension.MODID + ":excluded_from_headshot\".")
-                .comment("No need to add \"tacz:bullet\" (TAC bullet projectile), because it will be automatically ignored.")
+                .comment("No need to add \"tacz:bullet\" (TACZ bullet projectile), because it will be automatically ignored.")
                 .comment("And obviously writing \"minecraft:tipped_arrow\" in will make \"Tipped Arrow Potion List\" useless.")
                 .worldRestart()
                 .define("Bullet Type Blacklist", List.of("minecraft:shulker_bullet", "minecraft:snowball", "minecraft:ender_pearl"));
 
-        GENERIC_HEADSHOT_MULTIPLIER = BUILDER.defineInRange("Generic Headshot Multiplier", 1.5D, 0, 255D);
+        GENERIC_HEADSHOT_MULTIPLIER = BUILDER.comment("").defineInRange("Generic Headshot Multiplier", 1.5D, 0, 255D);
 
-        TEMPLATE_TACZ_WEAPON = BUILDER.comment("The headshot sound effect will be decided by this gun id.")
-                .comment("Leaving it at default value \"tacz:glock_17\" is recommended.")
-                .comment("Be sure to write a valid gun item id here.")
+        USE_TACZ_HEADSHOT_SOUND = BUILDER.comment("").comment("Switch this on to use TACZ headshot sound.")
+                .comment("If this is off(by default), vanilla critical hit sound will be played instead(Just like TAC does), and \"Sound Effect Template\" will become meaningless.")
+                .define("Use TACZ sound effect", false);
+
+        TEMPLATE_TACZ_WEAPON = BUILDER.comment("").comment("The headshot sound effect will be decided by this gun id.")
+                .comment("Be sure to write a valid gun item id here. Or keep \"Use TACZ sound effect\" false.")
                 .worldRestart()
                 .define("Sound Effect Template", "tacz:glock_17");
 
-        BUILDER.pop();
         BUILDER.push("Others");
 
         DISABLE_GLOBAL_HEADSHOT_BOX = BUILDER.comment("When TACZ meets an entity that doesn't have a configured headshot box, the mod will generate one using a vague logic.")
@@ -76,7 +80,7 @@ public class Config {
     }
 
     @SubscribeEvent
-    static void onLoad(final ModConfigEvent event) {
+    static void onLoad(final ModConfigEvent.@NotNull Loading event) {
         if(Objects.equals(event.getConfig().getFileName(), MOD_CONFIG_ID)) {
             initCache();
         }
@@ -85,6 +89,8 @@ public class Config {
     public static void initCache() {
         //主名单注册缓存，黑名单不需要缓存。
         HEADSHOT_MULTIPLIER_CACHE.clear();
+        ARROW_POTION_MULTIPLIER_CACHE.clear();
+
         for(String s1 : BULLET_ENTITY_TYPE_LIST_MAIN.get()) {
             addCheck(s1, 0);
         }
@@ -109,7 +115,10 @@ public class Config {
     }
 
     public static boolean testInBlackList(ResourceLocation r) {
-        return BULLET_ENTITY_TYPE_LIST_BLACKLIST.get().contains(r.toString());
+        return r == null || testInBlackList(r.toString());
+    }
+    public static boolean testInBlackList(String s) {
+        return BULLET_ENTITY_TYPE_LIST_BLACKLIST.get().contains(s);
     }
 
     public static float testInPotionList(String s, Float defaultValue) {
