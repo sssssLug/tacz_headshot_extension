@@ -1,11 +1,12 @@
 package com.ssssslug.tacz_headshot_extension.event_hander;
 
 import com.ssssslug.tacz_headshot_extension.Config;
+import com.ssssslug.tacz_headshot_extension.event.CustomHeadshotEvent;
 import com.ssssslug.tacz_headshot_extension.init.ModTagsRegistry;
 import com.ssssslug.tacz_headshot_extension.network.MessageFromServerCustomHeadshot;
+import com.ssssslug.tacz_headshot_extension.network.NetworkHandler;
 import com.tacz.guns.api.DefaultAssets;
 import com.tacz.guns.config.util.HeadShotAABBConfigRead;
-import com.tacz.guns.network.NetworkHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -30,30 +32,31 @@ public class ExHeadshotHandler {
         Entity direct = source.getDirectEntity();
         if(direct instanceof Projectile bullet && !source.is(ModTagsRegistry.EXCLUDED_FROM_HEADSHOT)) {
             ResourceLocation bulletId = ForgeRegistries.ENTITY_TYPES.getKey(direct.getType());
-            //noinspection DataFlowIssue
             if(Config.testInBlackList(bulletId)) return;
 
             //原版EntityHitResult并不会储存弹射物具体的命中位置。用TACZ的逻辑。
-            boolean flag = isHeadshot(bullet, event.getEntity(), direct.position(), direct.position().add(direct.getDeltaMovement()));
+            boolean flag = isHeadshot(event.getEntity(), direct.position(), direct.position().add(direct.getDeltaMovement()));
             if(!flag)return;
-            float multiplier = Config.testInList(bulletId);
+            float f = Config.testInList(bulletId);
             if(bulletId.toString().equals("minecraft:tipped_arrow")){
                 String potionId = getPotionIdString(direct.getPersistentData());
-                multiplier = Config.testInPotionList(potionId, multiplier);
+                f = Config.testInPotionList(potionId, f);
             }
-            //应该不会有人写个小于1的倍率吧不会吧不会吧
-            if(multiplier <= 0.0F)return;
-            event.setAmount(event.getAmount() * multiplier);
 
+            CustomHeadshotEvent event1 = new CustomHeadshotEvent(event.getEntity(), source, direct, event.getAmount(), f);
+            if(MinecraftForge.EVENT_BUS.post(event1)) return;
+            float dmgMultiplier = event1.getHeadshotMultiplier();
+            if(dmgMultiplier <= 0.0F) return;
+            event.setAmount(event.getAmount() * f);
             //发包调用下准心特效和音效。很明显光靠这个监听器判断不了实体是否被击杀
             Entity attacker = source.getEntity();
             if(attacker instanceof ServerPlayer && !attacker.level().isClientSide()) {
-                NetworkHandler.sendToDimension(new MessageFromServerCustomHeadshot(DefaultAssets.DEFAULT_GUN_DISPLAY_ID, ResourceLocation.parse(Config.TEMPLATE_TACZ_WEAPON.get())), (Player) attacker);
+                NetworkHandler.sendToClientPlayer(new MessageFromServerCustomHeadshot(ResourceLocation.parse(Config.TEMPLATE_TACZ_WEAPON.get()), DefaultAssets.DEFAULT_GUN_DISPLAY_ID, !Config.USE_TACZ_HEADSHOT_SOUND.get()), (Player) attacker);
             }
         }
     }
 
-    private static boolean isHeadshot(Projectile bulletEntity, Entity victim, Vec3 startVec, Vec3 endVec) {
+    private static boolean isHeadshot(Entity victim, Vec3 startVec, Vec3 endVec) {
         //因为“弹射物命中和造成伤害”在监听时点已经确定发生了，所以不像原生方法那样搞判定箱补正也不会有太大问题
         AABB boundingBox = (victim instanceof Player && !victim.isCrouching()) ? victim.getBoundingBox().expandTowards(0, 0.0625, 0) : victim.getBoundingBox();
         Vec3 hitPos = (Vec3)boundingBox.clip(startVec, endVec).orElse((Vec3) null);
@@ -70,7 +73,7 @@ public class ExHeadshotHandler {
                 }
             }
 
-            //与某配置文件同步
+            //与某配置项同步
             if(!Config.DISABLE_GLOBAL_HEADSHOT_BOX.get()){
                 float eyeHeight = victim.getEyeHeight();
                 if (!headshot && (double) eyeHeight - (double) 0.25F < hitBoxPos.y && hitBoxPos.y < (double) eyeHeight + (double) 0.25F) {
