@@ -73,9 +73,9 @@ public class Config {
 
         BUILDER.push("Others");
 
-        DISABLE_GLOBAL_HEADSHOT_BOX = BUILDER.comment("When TACZ meets an entity that doesn't have a configured headshot box, the mod will generate one using a vague logic.")
+        DISABLE_GLOBAL_HEADSHOT_BOX = BUILDER.comment("When TACZ meets an entity that doesn't have a configured headshot box, the mod will decide with a vague logic.")
                 .comment("For some reason you might dislike this mechanic, Then you can switch this on to disable it.")
-                .comment("Be aware that this function will use Mixins. If you encounter some potential compatibility issues, turn it off.")
+                .comment("Be aware that this function will use Mixins. If you encounter any potential compatibility issues, turn it off.")
                 .worldRestart()
                 .define("Stop TACZ From Global Bounding-box Generation", false);
 
