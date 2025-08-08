@@ -37,6 +37,9 @@ public class Config {
     static final ForgeConfigSpec SPEC;
 
     static {
+        /*
+        * 说实话主名单和黑名单是可以合并的。。。
+        * 保持现状吧还是。*/
         BULLET_ENTITY_TYPE_LIST_MAIN = BUILDER.comment("Any damage-source with a valid projectile (extended from vanilla Projectile class) to cause damage will be executed for headshot calculation.")
                 .comment("There'll be a global headshot multiplier.If you need some special values for specific bullet entity types, write them below.")
                 .comment("e.g. \"minecraft:arrow=2.0\"").worldRestart()
@@ -107,9 +110,7 @@ public class Config {
             switch (i) {
                 case 0 -> HEADSHOT_MULTIPLIER_CACHE.put(ResourceLocation.parse(m.group(1)), Float.parseFloat(m.group(2)));
                 case 1 -> ARROW_POTION_MULTIPLIER_CACHE.put(m.group(1), Float.parseFloat(m.group(2)));
-                default -> {
-                    return;
-                }
+                default -> {}
             }
         }
     }

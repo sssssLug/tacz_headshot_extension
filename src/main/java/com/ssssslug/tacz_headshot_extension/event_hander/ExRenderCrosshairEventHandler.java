@@ -23,7 +23,7 @@ public class ExRenderCrosshairEventHandler {
 
     /*
     * 见com.tacz.guns.client.event.RenderCrosshairEvent.
-    * 优先级调得比原型方法低，这样玩家手上是枪械时就不会调用这边的处理。*/
+    * 优先级比原型方法低，这样玩家手上是枪械时就不会调用这边的处理。*/
     @SubscribeEvent(receiveCanceled = false, priority = EventPriority.LOW)
     public static void onRenderCrossHair(RenderGuiOverlayEvent.Pre event) {
         if (event.getOverlay().id().equals(VanillaGuiOverlay.CROSSHAIR.id())) {
@@ -34,8 +34,9 @@ public class ExRenderCrosshairEventHandler {
 
             if (!IGun.mainHandHoldGun(player)) {
                 long remainHeadShotTime = System.currentTimeMillis() - headShotTimestamp;
-                if(remainHeadShotTime > 300L) return;
-                else renderHeadshotMarker(event.getGuiGraphics(), event.getWindow());
+                if (remainHeadShotTime <= 300L) {
+                    renderHeadshotMarker(event.getGuiGraphics(), event.getWindow());
+                }
             }
         }
     }
