@@ -1,6 +1,6 @@
 package com.ssssslug.tacz_headshot_extension.network;
 
-import com.ssssslug.tacz_headshot_extension.event_hander.ExRenderCrosshairEvent;
+import com.ssssslug.tacz_headshot_extension.event_hander.ExRenderCrosshairEventHandler;
 import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.client.event.RenderCrosshairEvent;
 import com.tacz.guns.client.sound.SoundPlayManager;
@@ -58,7 +58,7 @@ public class MessageFromServerCustomHeadshot {
         LocalPlayer player = mc.player;
         if(player == null)return;
 
-        ExRenderCrosshairEvent.markedHeadshotTimestamp();
+        ExRenderCrosshairEventHandler.markedHeadshotTimestamp();
         RenderCrosshairEvent.markHitTimestamp();
         RenderCrosshairEvent.markHeadShotTimestamp();
 

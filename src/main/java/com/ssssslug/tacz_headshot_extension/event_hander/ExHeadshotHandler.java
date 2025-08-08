@@ -34,7 +34,7 @@ public class ExHeadshotHandler {
             ResourceLocation bulletId = ForgeRegistries.ENTITY_TYPES.getKey(direct.getType());
             if(Config.testInBlackList(bulletId)) return;
 
-            //原版EntityHitResult并不会储存弹射物具体的命中位置。用TACZ的逻辑。
+            //原版EntityHitResult并不会储存弹射物具体的命中位置。用TACZ的逻辑重新判断。
             boolean flag = isHeadshot(event.getEntity(), direct.position(), direct.position().add(direct.getDeltaMovement()));
             if(!flag)return;
             float f = Config.testInList(bulletId);
@@ -46,9 +46,10 @@ public class ExHeadshotHandler {
             CustomHeadshotEvent event1 = new CustomHeadshotEvent(event.getEntity(), source, direct, event.getAmount(), f);
             if(MinecraftForge.EVENT_BUS.post(event1)) return;
             float dmgMultiplier = event1.getHeadshotMultiplier();
+            //最终倍率不大于0的话就终止处理。
             if(dmgMultiplier <= 0.0F) return;
             event.setAmount(event.getAmount() * f);
-            //发包调用下准心特效和音效。很明显光靠这个监听器判断不了实体是否被击杀
+            //发包调用下准心特效和音效。很明显光靠这个监听器判断不了实体是否被击杀。
             Entity attacker = source.getEntity();
             if(attacker instanceof ServerPlayer && !attacker.level().isClientSide()) {
                 NetworkHandler.sendToClientPlayer(new MessageFromServerCustomHeadshot(ResourceLocation.parse(Config.TEMPLATE_TACZ_WEAPON.get()), DefaultAssets.DEFAULT_GUN_DISPLAY_ID, !Config.USE_TACZ_HEADSHOT_SOUND.get()), (Player) attacker);
@@ -57,7 +58,7 @@ public class ExHeadshotHandler {
     }
 
     private static boolean isHeadshot(Entity victim, Vec3 startVec, Vec3 endVec) {
-        //因为“弹射物命中和造成伤害”在监听时点已经确定发生了，所以不像原生方法那样搞判定箱补正也不会有太大问题
+        //因为“弹射物命中和造成伤害”在监听时点已经确定发生了，所以不像原生方法那样搞判定箱补正也不会有太大问题。
         AABB boundingBox = (victim instanceof Player && !victim.isCrouching()) ? victim.getBoundingBox().expandTowards(0, 0.0625, 0) : victim.getBoundingBox();
         Vec3 hitPos = (Vec3)boundingBox.clip(startVec, endVec).orElse((Vec3) null);
         if (hitPos == null) {
