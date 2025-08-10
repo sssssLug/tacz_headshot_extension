@@ -1,4 +1,4 @@
-package com.ssssslug.tacz_headshot_extension.event_hander;
+package com.ssssslug.tacz_headshot_extension.event_handler;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Window;

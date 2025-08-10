@@ -15,6 +15,6 @@ public abstract class EntityUtilMixin {
     * 非常轻量的混入，应该不会引起什么严重的兼容性问题。*/
     @ModifyVariable(method = "getHitResult", at = @At(value = "STORE"), name = "headshot")
     private static boolean hijackHeadshotResult(boolean o) {
-        return o && !Config.DISABLE_GLOBAL_HEADSHOT_BOX.get();
+        return o && !Config.Common.DISABLE_GLOBAL_HEADSHOT_JUDGEMENT.get();
     }
 }

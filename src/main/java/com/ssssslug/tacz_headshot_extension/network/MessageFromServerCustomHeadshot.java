@@ -1,6 +1,7 @@
 package com.ssssslug.tacz_headshot_extension.network;
 
-import com.ssssslug.tacz_headshot_extension.event_hander.ExRenderCrosshairEventHandler;
+import com.ssssslug.tacz_headshot_extension.Config;
+import com.ssssslug.tacz_headshot_extension.event_handler.ExRenderCrosshairEventHandler;
 import com.tacz.guns.api.TimelessAPI;
 import com.tacz.guns.client.event.RenderCrosshairEvent;
 import com.tacz.guns.client.sound.SoundPlayManager;
@@ -15,30 +16,22 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-@SuppressWarnings({"unused", "FieldCanBeLocal"})
+@SuppressWarnings({"FieldCanBeLocal", "ClassCanBeRecord"})
 public class MessageFromServerCustomHeadshot {
-    private final ResourceLocation templateGunId;
-    private final ResourceLocation templateGunDisplayId;
-    private final boolean useVanillaCriticalSound;
+    private final int bulletId;
 
-    public MessageFromServerCustomHeadshot(ResourceLocation templateGunId, ResourceLocation templateGunDisplayId, boolean defaultHeadshotSound) {
-        this.templateGunId = templateGunId;
-        this.templateGunDisplayId = templateGunDisplayId;
-        this.useVanillaCriticalSound = defaultHeadshotSound;
+    public MessageFromServerCustomHeadshot(int templateGunDisplayId) {
+        this.bulletId = templateGunDisplayId;
     }
 
     public static void encode(MessageFromServerCustomHeadshot message, FriendlyByteBuf buf) {
-        buf.writeResourceLocation(message.templateGunId);
-        buf.writeResourceLocation(message.templateGunDisplayId);
-        buf.writeBoolean(message.useVanillaCriticalSound);
+        buf.writeInt(message.bulletId);
     }
 
     public static MessageFromServerCustomHeadshot decode(FriendlyByteBuf buf) {
-        ResourceLocation templateGunId = buf.readResourceLocation();
-        ResourceLocation templateGunDisplayId = buf.readResourceLocation();
-        boolean defaultHeadshotSound = buf.readBoolean();
+        int bulletId = buf.readInt();
 
-        return new MessageFromServerCustomHeadshot(templateGunId, templateGunDisplayId, defaultHeadshotSound);
+        return new MessageFromServerCustomHeadshot(bulletId);
     }
 
     public static void handle(MessageFromServerCustomHeadshot message, Supplier<NetworkEvent.Context> contextSupplier) {
@@ -62,10 +55,11 @@ public class MessageFromServerCustomHeadshot {
         RenderCrosshairEvent.markHitTimestamp();
         RenderCrosshairEvent.markHeadShotTimestamp();
 
-        if(message.useVanillaCriticalSound){
-            ((LocalPlayer) player).playSound(SoundEvents.PLAYER_ATTACK_CRIT, 1.0F, 1.0F);
+        ResourceLocation templateGunId = ResourceLocation.parse(Config.Client.TEMPLATE_TACZ_WEAPON.get());
+        if(Config.Client.USE_TACZ_HEADSHOT_SOUND.get()){
+            TimelessAPI.getGunDisplay((ResourceLocation) null, templateGunId).ifPresent((index) -> SoundPlayManager.playHeadHitSound(player, index));
         } else {
-            TimelessAPI.getGunDisplay(message.templateGunDisplayId, message.templateGunId).ifPresent((index) -> SoundPlayManager.playHeadHitSound(mc.player, index));
+            ((LocalPlayer) player).playSound(SoundEvents.PLAYER_ATTACK_CRIT, 1.0F, 1.0F);
         }
     }
 }

@@ -5,7 +5,6 @@ import com.ssssslug.tacz_headshot_extension.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -36,7 +35,9 @@ public class TACZHeadshotExtension {
         MinecraftForge.EVENT_BUS.register(this);
 
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.Common.SPEC_COMMON);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Config.Server.SPEC_SERVER);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.Client.SPEC_CLIENT);
     }
 
 
@@ -45,13 +46,6 @@ public class TACZHeadshotExtension {
             NetworkHandler.setup();
             LOGGER.info("TACZ Extension Mod network initialized!");
         });
-    }
-
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
-    @SubscribeEvent
-    public void onServerStarting(ServerStartingEvent event) {
-        // Do something when the server starts
-        LOGGER.info("HELLO from server starting");
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
