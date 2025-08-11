@@ -1,8 +1,10 @@
 package com.ssssslug.tacz_headshot_extension.event_handler;
 
+import com.mojang.logging.LogUtils;
 import com.ssssslug.tacz_headshot_extension.Config;
 import com.ssssslug.tacz_headshot_extension.event.CustomHeadshotEvent;
 import com.ssssslug.tacz_headshot_extension.init.ModTagsRegistry;
+import com.ssssslug.tacz_headshot_extension.mixin.ArrowAccessor;
 import com.ssssslug.tacz_headshot_extension.network.MessageFromServerCustomHeadshot;
 import com.ssssslug.tacz_headshot_extension.network.NetworkHandler;
 import com.tacz.guns.config.util.HeadShotAABBConfigRead;
@@ -20,9 +22,11 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
+import org.slf4j.Logger;
 
 @Mod.EventBusSubscriber
 public class ExHeadshotHandler {
+//    private static final Logger LOGGER = LogUtils.getLogger();
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onLivingHurtByProjectile(LivingHurtEvent event) {
@@ -36,9 +40,9 @@ public class ExHeadshotHandler {
             boolean flag = isHeadshot(event.getEntity(), bullet, direct.position(), direct.position().add(direct.getDeltaMovement()));
             if(!flag)return;
             float f = Config.testInList(bulletTypeId);
-            if(bulletTypeId.toString().equals("minecraft:tipped_arrow")){
-                String potionId = getPotionIdString(direct.getPersistentData());
-                f = Config.testInPotionList(potionId, f);
+            if(bulletTypeId.toString().equals("minecraft:arrow")){
+                ResourceLocation potionType = ForgeRegistries.POTIONS.getKey(((ArrowAccessor)bullet).getPotion());
+                f = Config.testInPotionList(potionType, f);
             }
 
             CustomHeadshotEvent event1 = new CustomHeadshotEvent(event.getEntity(), source, direct, event.getAmount(), f);
@@ -69,7 +73,7 @@ public class ExHeadshotHandler {
         if(entityId != null) {
             Vec3 victimPos = victim.position();
             AABB aabb = HeadShotAABBConfigRead.getAABB(entityId);
-            //考虑到很多弹射物（比如最常见的箭）碰撞箱都有不可忽视的大小，给个额外补正减少擦头皮的几率。
+            //考虑到很多弹射物（比如最常见的箭）碰撞箱都有不可忽视的大小，给个额外补正减少“擦头皮”的几率。
             AABB aabb1 = bullet.getBoundingBox();
             double trimX = 0.25D * aabb1.getXsize();
             double trimY = 0.5D * aabb1.getYsize();
@@ -81,24 +85,18 @@ public class ExHeadshotHandler {
                 headshot = hitPos != null;
             }//与某配置项同步
             else if(!Config.Common.DISABLE_GLOBAL_HEADSHOT_JUDGEMENT.get()){
-                float eyePosHeight = (float) victim.getEyeY();
-                //这一段好像一开始就不需要。。。
-                /*
-                AABB boundingBox = (victim instanceof Player && !victim.isCrouching()) ? victim.getBoundingBox().expandTowards(0, 0.0625, 0).inflate(trimX, trimY, trimZ) : victim.getBoundingBox().inflate(trimX, trimY, trimZ);
+                double eyePosHeight = victim.getEyeY();
+                //对Y方向的补正与前面同理。
+                //顺便一提TaCZ原生逻辑有一个问题，就是命中生物碰撞箱顶面的“灌顶”攻击基本无法判定爆头。
+                //虽然已经进行了额外的补正，但考虑到以常见弹射物的飞行速度在命中实体时往往已经有明显的向下角度了，这个问题的影响会比枪弹大不少。
+                //尽量给游戏中每一个生物配置专用的判定箱比使用这种模糊处理要好得多，还节省性能。
+                //所以建议整合包开发者不要偷懒。
+                AABB boundingBox = (victim instanceof Player && !victim.isCrouching()) ? victim.getBoundingBox().expandTowards(0, 0.0625D - trimY, 0).inflate(trimX, 0, trimZ) : victim.getBoundingBox().expandTowards(0, -trimY, 0).inflate(trimX, trimY, trimZ);
                 Vec3 bodyHitPos = (Vec3)boundingBox.clip(startVec, endVec).orElse((Vec3) null);
                 if (bodyHitPos != null) {
-                    bodyHitPos = bodyHitPos.subtract(victimPos);
-                    if ((double) eyePosHeight - trimY - (double) 0.25F < bodyHitPos.y && bodyHitPos.y < (double) eyePosHeight + trimY + (double) 0.25F) {
+                    if (eyePosHeight - trimY - (double) 0.251F < bodyHitPos.y && bodyHitPos.y < eyePosHeight + 0.5F * trimY + (double) 0.251F) {
                         headshot = true;
                     }
-                }*/
-                Vec3 bulletPos = bullet.position();
-                //与前面同理。
-                //顺便一提这个逻辑有一个问题，就是命中生物碰撞箱顶面的“灌顶”攻击基本无法判定爆头。
-                //TaCZ原生逻辑也有这个毛病，就当是保持特性一致了。
-                //所以说，尽量给游戏中每一个生物配置专用的判定箱比使用这种模糊处理要好得多，建议整合包开发者不要偷懒。
-                if ((double) eyePosHeight - trimY - (double) 0.251F < bulletPos.y && bulletPos.y < (double) eyePosHeight + (double) 0.251F) {
-                    headshot = true;
                 }
             }
         }
@@ -106,8 +104,11 @@ public class ExHeadshotHandler {
         return headshot;
     }
 
+//    调用实体NBT的方法不稳定。
+/*
     private static String getPotionIdString(CompoundTag tag) {
-        CompoundTag itemTag = tag.getCompound("Item");
+        CompoundTag itemTag = tag.getCompound("item");
         return itemTag.getCompound("tag").getString("Potion");
     }
+*/
 }

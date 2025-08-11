@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 public class Config {
 
     private static final Map<ResourceLocation, Float> HEADSHOT_MULTIPLIER_CACHE = Maps.newHashMap();
-    private static final Map<String, Float> ARROW_POTION_MULTIPLIER_CACHE = Maps.newHashMap();
+    private static final Map<ResourceLocation, Float> ARROW_POTION_MULTIPLIER_CACHE = Maps.newHashMap();
     private static final Set<String> HEADSHOT_BLACKLIST_CACHE = new HashSet<>();
     private static final Pattern REG = Pattern.compile("^([a-z0-9_.-]+:[a-z0-9/._-]+) *?= *?([-+]?[0-9]*\\.?[0-9]+)$");
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -55,7 +55,7 @@ public class Config {
         if(m.find()) {
             switch (index) {
                 case 0 -> HEADSHOT_MULTIPLIER_CACHE.put(ResourceLocation.parse(m.group(1)), Float.parseFloat(m.group(2)));
-                case 1 -> ARROW_POTION_MULTIPLIER_CACHE.put(m.group(1), Float.parseFloat(m.group(2)));
+                case 1 -> ARROW_POTION_MULTIPLIER_CACHE.put(ResourceLocation.parse(m.group(1)), Float.parseFloat(m.group(2)));
                 default -> {}
             }
         }else LOGGER.warn("Cache error: can't read current element: \"{}\". There may be some formatting mistake.", s);
@@ -69,8 +69,8 @@ public class Config {
         return HEADSHOT_BLACKLIST_CACHE.contains(s);
     }
 
-    public static float testInPotionList(String s, Float defaultValue) {
-        return ARROW_POTION_MULTIPLIER_CACHE.getOrDefault(s, defaultValue) ;
+    public static float testInPotionList(ResourceLocation r, Float defaultValue) {
+        return ARROW_POTION_MULTIPLIER_CACHE.getOrDefault(r, defaultValue) ;
     }
 
     public static float testInList(ResourceLocation r) {
@@ -120,15 +120,16 @@ public class Config {
             BULLET_ENTITY_TYPE_LIST_POTION = BUILDER_SERVER.comment("").comment("In particular, if the projectile is a vanilla tipped-arrow and has a valid Potion type-")
                     .comment("-(Attention: Only potion type is usable, Custom Effects NBT will be ignored), you can write them here to get a special multiplier.")
                     .comment("Make yourself aware of the difference between Potion and Effect.")
+                    .comment("BTW minecraft tipped arrow entity use \"minecraft:arrow\" as its type-id, not \"minecraft:tipped_arrow\". Keep that in mind.")
                     .comment("e.g. \"minecraft:harming=1.5\", \"minecraft:strong_harming=2.5\"")
-                    .comment("Then if there's \"minecraft:tipped_arrow=2.0\" in \"Bullet Type List\", the final multiplier will be 150% for an Arrow of Harming and 250% for the strong version, despite the former.")
+                    .comment("Then if there's \"minecraft:arrow=2.0\" in \"Bullet Type List\", the final multiplier will be 150% for an Arrow of Harming and 250% for the strong version, despite the former.")
                     .worldRestart()
                     .define("Tipped Arrow Potion List", List.of("minecraft:harming=2.5", "minecraft:strong_harming=3.0"));
 
             BULLET_ENTITY_TYPE_LIST_BLACKLIST = BUILDER_SERVER.comment("").comment("Some projectiles might not be suitable for performing a \"Headshot\".That's why there's a blacklist.")
                     .comment("There's also a blacklist of damage-types, or in other words, a tag as \"" + TACZHeadshotExtension.MODID + ":excluded_from_headshot\".")
                     .comment("No need to add \"tacz:bullet\" (TACZ bullet projectile), because it will be automatically ignored.")
-                    .comment("And obviously writing \"minecraft:tipped_arrow\" in will make \"Tipped Arrow Potion List\" useless.")
+                    .comment("And obviously writing \"minecraft:arrow\" in will make \"Tipped Arrow Potion List\" useless.")
                     .worldRestart()
                     .define("Bullet Type Blacklist", List.of("minecraft:shulker_bullet", "minecraft:snowball", "minecraft:ender_pearl"));
 
