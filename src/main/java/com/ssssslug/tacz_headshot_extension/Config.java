@@ -103,9 +103,9 @@ public class Config {
     public static class Server {
 
         static final ForgeConfigSpec SPEC_SERVER;
-        static final ForgeConfigSpec.ConfigValue<List<String>> BULLET_ENTITY_TYPE_LIST_MAIN;
-        static final ForgeConfigSpec.ConfigValue<List<String>> BULLET_ENTITY_TYPE_LIST_POTION;
-        static final ForgeConfigSpec.ConfigValue<List<String>> BULLET_ENTITY_TYPE_LIST_BLACKLIST;
+        static final ForgeConfigSpec.ConfigValue<List<? extends String>> BULLET_ENTITY_TYPE_LIST_MAIN;
+        static final ForgeConfigSpec.ConfigValue<List<? extends String>> BULLET_ENTITY_TYPE_LIST_POTION;
+        static final ForgeConfigSpec.ConfigValue<List<? extends String>> BULLET_ENTITY_TYPE_LIST_BLACKLIST;
 
         private static final ForgeConfigSpec.Builder BUILDER_SERVER = new ForgeConfigSpec.Builder();
 
@@ -115,7 +115,9 @@ public class Config {
             BULLET_ENTITY_TYPE_LIST_MAIN = BUILDER_SERVER.comment("Any damage-source with a valid projectile (extended from vanilla Projectile class) to cause damage will be executed for headshot calculation.")
                     .comment("There'll be a global headshot multiplier.If you need some special values for specific bullet entity types, write them below.")
                     .comment("e.g. \"minecraft:arrow=2.0\"").worldRestart()
-                    .define("Bullet Type List", List.of("minecraft:trident=2.5"));
+                    .<String>defineList("Bullet Type List", List.of("minecraft:trident=2.5"), (obj) -> {
+                        return obj instanceof String;
+                    });
 
             BULLET_ENTITY_TYPE_LIST_POTION = BUILDER_SERVER.comment("").comment("In particular, if the projectile is a vanilla tipped-arrow and has a valid Potion type-")
                     .comment("-(Attention: Only potion type is usable, Custom Effects NBT will be ignored), you can write them here to get a special multiplier.")
@@ -124,14 +126,18 @@ public class Config {
                     .comment("e.g. \"minecraft:harming=1.5\", \"minecraft:strong_harming=2.5\"")
                     .comment("Then if there's \"minecraft:arrow=2.0\" in \"Bullet Type List\", the final multiplier will be 150% for an Arrow of Harming and 250% for the strong version, despite the former.")
                     .worldRestart()
-                    .define("Tipped Arrow Potion List", List.of("minecraft:harming=2.5", "minecraft:strong_harming=3.0"));
+                    .<String>defineList("Tipped Arrow Potion List", List.of("minecraft:harming=2.5", "minecraft:strong_harming=3.0"), (obj) -> {
+                        return obj instanceof String;
+                    });
 
             BULLET_ENTITY_TYPE_LIST_BLACKLIST = BUILDER_SERVER.comment("").comment("Some projectiles might not be suitable for performing a \"Headshot\".That's why there's a blacklist.")
                     .comment("There's also a blacklist of damage-types, or in other words, a tag as \"" + TACZHeadshotExtension.MODID + ":excluded_from_headshot\".")
                     .comment("No need to add \"tacz:bullet\" (TACZ bullet projectile), because it will be automatically ignored.")
                     .comment("And obviously writing \"minecraft:arrow\" in will make \"Tipped Arrow Potion List\" useless.")
                     .worldRestart()
-                    .define("Bullet Type Blacklist", List.of("minecraft:shulker_bullet", "minecraft:snowball", "minecraft:ender_pearl"));
+                    .<String>defineList("Bullet Type Blacklist", List.of("minecraft:shulker_bullet", "minecraft:snowball", "minecraft:ender_pearl"), (obj) -> {
+                        return obj instanceof String;
+                    });
 
             SPEC_SERVER = BUILDER_SERVER.build();
         }
