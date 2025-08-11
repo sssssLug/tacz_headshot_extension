@@ -42,7 +42,7 @@ public class ExHeadshotHandler {
             float f = Config.testInList(bulletTypeId);
             if(bulletTypeId.toString().equals("minecraft:arrow")){
                 ResourceLocation potionType = ForgeRegistries.POTIONS.getKey(((ArrowAccessor)bullet).getPotion());
-                f = Config.testInPotionList(potionType, f);
+                if(potionType != null) f = Config.testInPotionList(potionType, f);
             }
 
             CustomHeadshotEvent event1 = new CustomHeadshotEvent(event.getEntity(), source, direct, event.getAmount(), f);
