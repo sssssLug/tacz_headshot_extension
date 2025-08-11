@@ -6,6 +6,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.Cancelable;
 
+@SuppressWarnings("unused")
 @Cancelable
 public class CustomHeadshotEvent extends LivingEvent {
     private final DamageSource source;
