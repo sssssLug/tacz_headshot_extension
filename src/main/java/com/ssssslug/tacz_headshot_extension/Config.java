@@ -38,6 +38,7 @@ public class Config {
         //三名单缓存。
         HEADSHOT_MULTIPLIER_CACHE.clear();
         ARROW_POTION_MULTIPLIER_CACHE.clear();
+        HEADSHOT_BLACKLIST_CACHE.clear();
 
         for(String s1 : Server.BULLET_ENTITY_TYPE_LIST_MAIN.get()) {
             addCheck(s1, 0);
